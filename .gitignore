@@ -16,3 +16,9 @@
 .DS_Store
 .trash/
 .vscode
+
+# --- Quartz Website Engine (Anywhere in repo) ---
+**/node_modules/
+**/.quartz-cache/
+**/public/
+**/package-lock.json
