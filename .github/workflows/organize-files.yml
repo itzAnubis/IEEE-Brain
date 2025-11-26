@@ -1,0 +1,37 @@
+name: "🤖 IEEE Librarian: Organize"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "00_Inbox/**.md"  # Only runs if new files landed in Inbox
+
+permissions:
+  contents: write  # Gives the bot permission to move files
+
+jobs:
+  organize-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install python-frontmatter
+
+      - name: Run Organizer Script
+        run: python3 99_System/Scripts/organize_files.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "IEEE-Brain-Bot"
+          git config --global user.email "bot@ieee-sb-pua.org"
+          git add .
+          # Only commit if there are changes
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 Bot: Moved files to Knowledge Base" && git push)

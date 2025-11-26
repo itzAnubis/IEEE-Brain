@@ -1,0 +1,24 @@
+name: "👮‍♂️ IEEE Gatekeeper: Verify"
+
+on:
+  pull_request:
+    paths:
+      - "00_Inbox/**.md"  # Only runs when files in Inbox change
+
+jobs:
+  validate-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install python-frontmatter
+
+      - name: Run Validation Script
+        run: python3 99_System/Scripts/validate_pr.py
