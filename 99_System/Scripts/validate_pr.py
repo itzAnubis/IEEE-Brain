@@ -2,9 +2,10 @@ import os
 import sys
 import frontmatter
 
-# Defined Rules
-REQUIRED_KEYS = ["author", "type", "status"]
+# --- CONFIGURATION ---
 INBOX_DIR = "00_Inbox"
+REQUIRED_KEYS = ["author", "type", "status", "domain"]
+ALLOWED_DOMAINS = ["AI", "Robotics", "CS", "DS", "SS", "General"]
 
 print("👮‍♂️ Gatekeeper is scanning...")
 has_error = False
@@ -16,20 +17,31 @@ for root, dirs, files in os.walk(INBOX_DIR):
             filepath = os.path.join(root, file)
             try:
                 post = frontmatter.load(filepath)
-                missing = [key for key in REQUIRED_KEYS if key not in post.keys()]
                 
+                # 1. Check for Missing Keys
+                missing = [key for key in REQUIRED_KEYS if key not in post.keys()]
                 if missing:
                     print(f"❌ ERROR in {file}: Missing metadata keys: {missing}")
                     has_error = True
-                else:
-                    print(f"✅ PASSED: {file}")
+                    continue # Skip next check if keys are missing
+
+                # 2. Check for Valid Domain
+                user_domain = post.get("domain")
+                if user_domain not in ALLOWED_DOMAINS:
+                    print(f"❌ ERROR in {file}: Invalid Domain '{user_domain}'.")
+                    print(f"   Allowed: {ALLOWED_DOMAINS}")
+                    has_error = True
+
+                if not has_error:
+                    print(f"✅ PASSED: {file} ({user_domain})")
+
             except Exception as e:
                 print(f"⚠️ CRITICAL: Could not parse {file}. Is it valid YAML? Error: {e}")
                 has_error = True
 
 if has_error:
-    print("⛔ GATEKEEPER SAYS: Fix the errors above before merging!")
-    sys.exit(1)  # This tells GitHub to block the PR (Red X)
+    print("⛔ GATEKEEPER SAYS: Fix the metadata errors above!")
+    sys.exit(1)  # Block the PR
 else:
-    print("✨ All checks passed. You may enter.")
-    sys.exit(0)  # Green checkmark
+    print("✨ Metadata & Domain checks passed.")
+    sys.exit(0)

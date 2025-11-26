@@ -1,11 +1,12 @@
 ---
 id: {{date:YYYYMMDDHHmm}}
 author: {{date:author_name}}
-status: needs_review
 type: concept
-# The AI will check these!
-concepts: []  
-related_notes: [] 
+status: needs_review
+
+domain: "Uncategorized" # Options: AI, Robotics, CS, DS, SS
+concepts: []
+related_notes: []
 ---
 
 # Title
