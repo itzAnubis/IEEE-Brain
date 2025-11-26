@@ -8,7 +8,6 @@ concepts:
   - Math
   - Optimization
 related_notes:
-  - "[[ANN]]"
 ---
 
 # Title
