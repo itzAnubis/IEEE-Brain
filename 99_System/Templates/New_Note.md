@@ -1,11 +1,11 @@
 ---
-id:
-  "{ date:YYYYMMDDHHmm }":
-author:
-  "{ date:author_name }":
+id: {{date:YYYYMMDDHHmm}}
+author: {{date:author_name}}
 status: needs_review
 type: concept
-tags: []
+# The AI will check these!
+concepts: []  
+related_notes: [] 
 ---
 
 # Title
