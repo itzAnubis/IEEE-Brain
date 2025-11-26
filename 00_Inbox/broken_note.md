@@ -1,2 +1,7 @@
+---
+author: Ahmed
+type: concept
+status: needs_review
+---
 # Just a title
-I forgot the frontmatter!
+I fixed it!
