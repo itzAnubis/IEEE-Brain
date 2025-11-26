@@ -2,7 +2,7 @@ id: 202411261003
 author: TeamMember_Y 
 type: concept 
 status: needs_review 
-domain: "AI" 
+domain: [[AI]] 
 concepts: [[Math]], [[Optimization]] 
 related_notes: [[ANN]]
 

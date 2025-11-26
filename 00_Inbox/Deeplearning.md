@@ -2,7 +2,7 @@ id: 202411261001
 author: Ahmed
 type: concept
 status: needs_review
-domain: "AI"
+domain: [[AI]]
 concepts: [[Machine Learning]], [[Neural Networks]]
 related_notes: [[ANN]], [[AI]]
 
