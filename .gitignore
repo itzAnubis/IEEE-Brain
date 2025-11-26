@@ -1,4 +1,4 @@
-# IEEE-Brain Gitignore
+# .gitignore for IEEE-Brain
 
 # Obsidian specific - ignore personal workspace configs
 .obsidian/workspace
@@ -7,7 +7,10 @@
 .obsidian/graph.json
 .obsidian/appearance.json
 .obsidian/daily-notes.json
-.obsidian/hotkeys.json
+
+# Keep these shared (Plugin settings are good to share for consistency)
+# !.obsidian/plugins
+# !.obsidian/community-plugins.json
 
 # System specific
 .DS_Store
