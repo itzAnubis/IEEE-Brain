@@ -12,7 +12,7 @@ related_notes: [[ANN]]
 
 Backpropagation (backward propagation of errors) is the core algorithm used to train an [[ANN]].
 
-It efficiently computes the gradient of the loss function with respect to the weights of the network. By using the **Chain Rule** of calculus, it propagates the error backward from the output layer to the input layer, allowing an optimization algorithm (like Gradient Descent) to adjust the weights to minimize error.
+It efficiently test computes the gradient of the loss function with respect to the weights of the network. By using the **Chain Rule** of calculus, it propagates the error backward from the output layer to the input layer, allowing an optimization algorithm (like Gradient Descent) to adjust the weights to minimize error.
 
 ## Resources
 

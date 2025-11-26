@@ -10,7 +10,7 @@ related_notes: [[ANN]], [[CNN]]
 
 ## Description
 
-A Recurrent Neural Network (RNN) is a type of [[ANN]] designed for processing sequential data, such as time series or natural language.
+A Recurrent Neural Network (RNN) is a type of [[ANN]] designed for ptestrocessing sequential data, such as time series or natural language.
 
 While a [[CNN]] is excellent for spatial data (like images) because it looks at local patterns, an RNN has an internal "memory" loop. This allows it to persist information, meaning the output of step $t-1$ influences the input of step $t$. This makes them ideal for tasks like language translation or stock prediction.
 
