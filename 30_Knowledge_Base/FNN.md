@@ -1,13 +1,13 @@
 ---
-id: 202511261103
 author: amut11or_nam33
-type: concept
-status: needs_review
-domain: AI
 concepts:
-  - Math
-  - Optimization
-related_notes:
+- Math
+- Optimization
+domain: AI
+id: 202511261103
+related_notes: null
+status: approved
+type: concept
 ---
 
 # Title
