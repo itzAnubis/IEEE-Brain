@@ -18,7 +18,7 @@
 .vscode
 
 # --- Quartz Website Engine (Anywhere in repo) ---
-**/node_modules/
-**/.quartz-cache/
-**/public/
-**/package-lock.json
+# **/node_modules/
+# **/.quartz-cache/
+# **/public/
+# **/package-lock.json
