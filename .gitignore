@@ -1,0 +1,14 @@
+# IEEE-Brain Gitignore
+
+# Obsidian specific - ignore personal workspace configs
+.obsidian/workspace
+.obsidian/workspace-mobile
+.obsidian/workspace.json
+.obsidian/graph.json
+.obsidian/appearance.json
+.obsidian/daily-notes.json
+.obsidian/hotkeys.json
+
+# System specific
+.DS_Store
+.trash/
