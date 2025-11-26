@@ -1,12 +1,12 @@
 ---
-id: 202201002
 author: Ahmed Sherif
-type: concept
-status: needs_review
-domain: AI
 concepts:
-  - Computer Vision
+- Computer Vision
+domain: AI
+id: 202201002
 related_notes: []
+status: approved
+type: concept
 ---
 
 # Title
