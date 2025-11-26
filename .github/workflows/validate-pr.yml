@@ -3,10 +3,10 @@ name: "👮‍♂️ IEEE Gatekeeper: Verify"
 on:
   pull_request:
     paths:
-      - "00_Inbox/**.md"  # Only runs when files in Inbox change
+      - "00_Inbox/**.md"  # Triggers when files in Inbox change
 
 jobs:
-  validate-metadata:
+  validate-submission:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -20,5 +20,10 @@ jobs:
       - name: Install Dependencies
         run: pip install python-frontmatter
 
-      - name: Run Validation Script
+      # --- LEVEL 1: METADATA CHECK ---
+      - name: 1️⃣ Validate Metadata (ID Check)
         run: python3 99_System/Scripts/validate_pr.py
+
+      # --- LEVEL 2: SMART LINK CHECK ---
+      - name: 2️⃣ Smart Link Audit (Content Check)
+        run: python3 99_System/Scripts/smart_linker.py
