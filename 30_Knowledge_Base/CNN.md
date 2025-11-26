@@ -1,11 +1,12 @@
 ---
-id: 202201002
 author: Ahmed Sherif
+concepts:
+- Computer Vision
+id: 202201002
+related_notes:
+- '[[ANN]]'
+status: approved
 type: concept
-status: needs_review
-concepts: ["Computer Vision"]
-# This is the KEY. If you remove this line, the Agent will yell at you.
-related_notes: ["[[ANN]]"]
 ---
 
 # Convolutional Neural Networks (CNN)
