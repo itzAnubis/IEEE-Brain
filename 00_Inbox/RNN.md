@@ -1,3 +1,4 @@
+---
 id: 202411261002 
 author: Ahmed Sherif
 type: concept 
@@ -5,7 +6,7 @@ status: needs_review
 domain: [[AI]] 
 concepts: [[Sequence Models]], [[NLP]] 
 related_notes: [[ANN]], [[CNN]]
-
+---
 # Recurrent Neural Networks (RNN)
 
 ## Description
