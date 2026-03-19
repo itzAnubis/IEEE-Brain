@@ -2,46 +2,71 @@ import os
 import sys
 import frontmatter
 
-# --- CONFIGURATION ---
 INBOX_DIR = "00_Inbox"
+
 REQUIRED_KEYS = ["author", "type", "status", "domain"]
 ALLOWED_DOMAINS = ["AI", "Robotics", "CS", "DS", "SS", "General"]
 
-print("👮‍♂️ Gatekeeper is scanning...")
+
+def auto_fix_metadata(post):
+    if "status" not in post:
+        post["status"] = "needs_review"
+    if "domain" not in post:
+        post["domain"] = "General"
+    return post
+
+
+def suggest_domain(content):
+    content = content.lower()
+
+    if "neural" in content or "transformer" in content:
+        return "AI"
+    if "robot" in content:
+        return "Robotics"
+    return "General"
+
+
+def annotate_failure(filepath, reason):
+    with open(filepath, "r") as f:
+        content = f.read()
+
+    with open(filepath, "w") as f:
+        f.write(f"> [!FAILURE] {reason}\n\n" + content)
+
+
+print("👮 Gatekeeper running...")
 has_error = False
 
-# Scan all markdown files in Inbox
 for root, dirs, files in os.walk(INBOX_DIR):
     for file in files:
         if file.endswith(".md"):
-            filepath = os.path.join(root, file)
-            try:
-                post = frontmatter.load(filepath)
-                
-                # 1. Check for Missing Keys
-                missing = [key for key in REQUIRED_KEYS if key not in post.keys()]
-                if missing:
-                    print(f"❌ ERROR in {file}: Missing metadata keys: {missing}")
-                    has_error = True
-                    continue # Skip next check if keys are missing
+            path = os.path.join(root, file)
+            post = frontmatter.load(path)
 
-                # 2. Check for Valid Domain
-                user_domain = post.get("domain")
-                if user_domain not in ALLOWED_DOMAINS:
-                    print(f"❌ ERROR in {file}: Invalid Domain '{user_domain}'.")
-                    print(f"   Allowed: {ALLOWED_DOMAINS}")
-                    has_error = True
+            # ✅ Auto fix
+            post = auto_fix_metadata(post)
 
-                if not has_error:
-                    print(f"✅ PASSED: {file} ({user_domain})")
+            # ✅ Auto domain suggestion
+            if post["domain"] == "General":
+                post["domain"] = suggest_domain(post.content)
 
-            except Exception as e:
-                print(f"⚠️ CRITICAL: Could not parse {file}. Is it valid YAML? Error: {e}")
+            # ❌ Missing keys
+            missing = [k for k in REQUIRED_KEYS if k not in post]
+            if missing:
+                annotate_failure(path, f"Missing {missing}")
+                has_error = True
+                continue
+
+            # ❌ Invalid domain
+            if post["domain"] not in ALLOWED_DOMAINS:
+                annotate_failure(path, "Invalid domain")
                 has_error = True
 
+            # Save changes
+            with open(path, "w") as f:
+                f.write(frontmatter.dumps(post))
+
 if has_error:
-    print("⛔ GATEKEEPER SAYS: Fix the metadata errors above!")
-    sys.exit(1)  # Block the PR
+    sys.exit(1)
 else:
-    print("✨ Metadata & Domain checks passed.")
     sys.exit(0)
