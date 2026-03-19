@@ -75,5 +75,52 @@ class TestIEEEBrainAgent(unittest.TestCase):
         self.assertFalse(os.path.exists(src), "File should be gone from Inbox")
         self.assertTrue(os.path.exists(dest), "File should be in Knowledge Base")
 
+
+            # --- TEST 3: Security Check ---
+    def test_gatekeeper_detects_secrets(self):
+        content = "My API key is sk-123456"
+        path = os.path.join(self.inbox, "secret_note.md")
+        
+        with open(path, "w") as f:
+            f.write(content)
+
+        with open(path, "r") as f:
+            text = f.read()
+
+        has_secret = "sk-" in text
+
+        self.assertTrue(has_secret, "Should detect API keys!")
+
+    # --- TEST 4: Link Check ---
+    def test_link_presence(self):
+        content = "Transformers use Attention"
+        path = os.path.join(self.inbox, "link_note.md")
+
+        with open(path, "w") as f:
+            f.write(content)
+
+        with open(path, "r") as f:
+            text = f.read()
+
+        has_link = "[[Attention]]" in text
+
+        self.assertFalse(has_link, "Link should be missing and detected!")
+
+    # --- TEST 5: Metadata Integrity ---
+    def test_librarian_keeps_metadata(self):
+        filename = "note.md"
+        metadata = {"author": "Aya", "type": "concept", "status": "needs_review"}
+        
+        self.create_note(filename, metadata)
+
+        src = os.path.join(self.inbox, filename)
+        dest = os.path.join(self.knowledge_base, filename)
+
+        shutil.move(src, dest)
+
+        post = frontmatter.load(dest)
+
+        self.assertEqual(post["author"], "Aya")
+
 if __name__ == "__main__":
     unittest.main()
