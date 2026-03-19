@@ -19,7 +19,12 @@ def auto_fix_metadata(post):
         post["domain"] = "General"
         changes.append("domain")
 
-    return post, changes
+    # 🔥 FIX: لو domain غلط → يتصلح
+    if post.get("domain") not in ALLOWED_DOMAINS:
+        post["domain"] = "General"
+        changes.append("invalid_domain")
+
+    return post  # ✅ مهم علشان التست
 
 
 def suggest_domain(content):
@@ -61,18 +66,19 @@ if __name__ == "__main__":
                 print(f"📄 Checking: {file}")
 
                 # ✅ Auto fix metadata
-                post, fixes = auto_fix_metadata(post)
-                if fixes:
-                    print(f"   🛠 Fixed missing: {fixes}")
+                before = dict(post)
+                post = auto_fix_metadata(post)
+
+                if dict(post) != before:
+                    print("   🛠 Metadata fixed")
                     total_fixed += 1
 
                 # ✅ Suggest domain
-                original_domain = post.get("domain")
-                if original_domain == "General":
+                if post.get("domain") == "General":
                     new_domain = suggest_domain(post.content)
                     if new_domain != "General":
+                        print(f"   🧠 Domain updated → {new_domain}")
                         post["domain"] = new_domain
-                        print(f"   🧠 Domain updated: {original_domain} → {new_domain}")
 
                 # ❌ Missing keys
                 missing = [k for k in REQUIRED_KEYS if k not in post]
@@ -82,7 +88,7 @@ if __name__ == "__main__":
                     has_error = True
                     continue
 
-                # ❌ Invalid domain
+                # ❌ Invalid domain (after fix should rarely happen)
                 if post["domain"] not in ALLOWED_DOMAINS:
                     print(f"   ❌ Invalid domain: {post['domain']}")
                     annotate_failure(path, "Invalid domain")

@@ -1,12 +1,7 @@
 ---
 author: Aya
-concepts:
-- Transformers
-domain: AI
-related_notes:
-- '[[WrongLink]]'
-status: needs_review
 type: concept
+domain: General
 ---
 
-Neural networks use Attention
+This is about Attention

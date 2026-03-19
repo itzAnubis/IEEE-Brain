@@ -164,10 +164,10 @@ class TestIEEEBrain(unittest.TestCase):
         content = "This is about Attention"
         notes = ["Attention"]
 
-        new_content = auto_add_links(content, notes)
+        new_content, links = auto_add_links(content, notes)
 
-        # 🔥 test أقوى
         self.assertEqual(new_content, "This is about [[Attention]]")
+        self.assertIn("Attention", links)
 
     def test_detect_duplicates(self):
         open(os.path.join(self.kb, "dup.md"), "w").close()
@@ -202,9 +202,10 @@ class TestIEEEBrain(unittest.TestCase):
         existing = ["Attention"]
         content = "This is about Attention"
 
-        new_content = auto_add_links(content, existing)
+        new_content, links = auto_add_links(content, existing)
 
         self.assertIn("[[Attention]]", new_content)
+        self.assertIn("Attention", links)
 
 
 if __name__ == "__main__":
