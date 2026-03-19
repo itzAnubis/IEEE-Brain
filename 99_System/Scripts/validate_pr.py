@@ -2,46 +2,108 @@ import os
 import sys
 import frontmatter
 
-# --- CONFIGURATION ---
 INBOX_DIR = "00_Inbox"
+
 REQUIRED_KEYS = ["author", "type", "status", "domain"]
 ALLOWED_DOMAINS = ["AI", "Robotics", "CS", "DS", "SS", "General"]
 
-print("👮‍♂️ Gatekeeper is scanning...")
-has_error = False
 
-# Scan all markdown files in Inbox
-for root, dirs, files in os.walk(INBOX_DIR):
-    for file in files:
-        if file.endswith(".md"):
-            filepath = os.path.join(root, file)
-            try:
-                post = frontmatter.load(filepath)
-                
-                # 1. Check for Missing Keys
-                missing = [key for key in REQUIRED_KEYS if key not in post.keys()]
+def auto_fix_metadata(post):
+    changes = []
+
+    if "status" not in post:
+        post["status"] = "needs_review"
+        changes.append("status")
+
+    if "domain" not in post:
+        post["domain"] = "General"
+        changes.append("domain")
+
+    # 🔥 FIX: لو domain غلط → يتصلح
+    if post.get("domain") not in ALLOWED_DOMAINS:
+        post["domain"] = "General"
+        changes.append("invalid_domain")
+
+    return post  # ✅ مهم علشان التست
+
+
+def suggest_domain(content):
+    content = content.lower()
+
+    if "neural" in content or "transformer" in content:
+        return "AI"
+    if "robot" in content:
+        return "Robotics"
+    return "General"
+
+
+def annotate_failure(filepath, reason):
+    with open(filepath, "r") as f:
+        content = f.read()
+
+    with open(filepath, "w") as f:
+        f.write(f"> [!FAILURE] {reason}\n\n" + content)
+
+
+if __name__ == "__main__":
+    print("👮 Gatekeeper running...\n")
+
+    has_error = False
+    total_fixed = 0
+
+    for root, dirs, files in os.walk(INBOX_DIR):
+        for file in files:
+            if file.endswith(".md"):
+                path = os.path.join(root, file)
+
+                try:
+                    post = frontmatter.load(path)
+                except Exception as e:
+                    print(f"❌ YAML Error in {file}: {e}")
+                    has_error = True
+                    continue
+
+                print(f"📄 Checking: {file}")
+
+                # ✅ Auto fix metadata
+                before = dict(post)
+                post = auto_fix_metadata(post)
+
+                if dict(post) != before:
+                    print("   🛠 Metadata fixed")
+                    total_fixed += 1
+
+                # ✅ Suggest domain
+                if post.get("domain") == "General":
+                    new_domain = suggest_domain(post.content)
+                    if new_domain != "General":
+                        print(f"   🧠 Domain updated → {new_domain}")
+                        post["domain"] = new_domain
+
+                # ❌ Missing keys
+                missing = [k for k in REQUIRED_KEYS if k not in post]
                 if missing:
-                    print(f"❌ ERROR in {file}: Missing metadata keys: {missing}")
+                    print(f"   ❌ Missing keys: {missing}")
+                    annotate_failure(path, f"Missing {missing}")
                     has_error = True
-                    continue # Skip next check if keys are missing
+                    continue
 
-                # 2. Check for Valid Domain
-                user_domain = post.get("domain")
-                if user_domain not in ALLOWED_DOMAINS:
-                    print(f"❌ ERROR in {file}: Invalid Domain '{user_domain}'.")
-                    print(f"   Allowed: {ALLOWED_DOMAINS}")
+                # ❌ Invalid domain (after fix should rarely happen)
+                if post["domain"] not in ALLOWED_DOMAINS:
+                    print(f"   ❌ Invalid domain: {post['domain']}")
+                    annotate_failure(path, "Invalid domain")
                     has_error = True
 
-                if not has_error:
-                    print(f"✅ PASSED: {file} ({user_domain})")
+                # Save file
+                with open(path, "w") as f:
+                    f.write(frontmatter.dumps(post))
 
-            except Exception as e:
-                print(f"⚠️ CRITICAL: Could not parse {file}. Is it valid YAML? Error: {e}")
-                has_error = True
+    print("\n📊 Summary:")
+    print(f"   🛠 Files fixed: {total_fixed}")
 
-if has_error:
-    print("⛔ GATEKEEPER SAYS: Fix the metadata errors above!")
-    sys.exit(1)  # Block the PR
-else:
-    print("✨ Metadata & Domain checks passed.")
-    sys.exit(0)
+    if has_error:
+        print("\n❌ Gatekeeper FAILED")
+        sys.exit(1)
+    else:
+        print("\n✅ Gatekeeper PASSED")
+        sys.exit(0)

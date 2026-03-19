@@ -1,126 +1,212 @@
 import unittest
 import os
-import shutil
 import tempfile
+import shutil
 import frontmatter
+import sys
 
-# Import the logic we want to test (we assume the scripts are modules for now)
-# For this test, we will replicate the logic functions directly to ensure they work
+# عشان نقدر نعمل import من غير ما نغير اسم 99_System
+sys.path.append(os.path.abspath("99_System/Scripts"))
 
-class TestIEEEBrainAgent(unittest.TestCase):
+from smart_linker import auto_add_links, detect_duplicates
+from validate_pr import auto_fix_metadata, suggest_domain
+
+
+# ===== FUNCTIONS =====
+
+def validate_notes(inbox):
+    required = ["author", "type", "status", "domain"]
+
+    for file in os.listdir(inbox):
+        if file.endswith(".md"):
+            post = frontmatter.load(os.path.join(inbox, file))
+            for key in required:
+                if key not in post:
+                    return True
+    return False
+
+
+def detect_secrets(text):
+    return "sk-" in text
+
+
+def organize_notes(inbox, kb, projects):
+    moved = []
+
+    for file in os.listdir(inbox):
+        if file.endswith(".md"):
+            src = os.path.join(inbox, file)
+            post = frontmatter.load(src)
+
+            dest_folder = kb
+            if post.get("type") == "project":
+                dest_folder = projects
+
+            os.makedirs(dest_folder, exist_ok=True)
+
+            dest = os.path.join(dest_folder, file)
+            shutil.move(src, dest)
+            moved.append(dest)
+
+    return moved
+
+
+def scan_existing_notes(kb):
+    notes = []
+    for file in os.listdir(kb):
+        if file.endswith(".md"):
+            notes.append(os.path.splitext(file)[0])
+    return notes
+
+
+def check_links(inbox, existing):
+    issues = []
+
+    for file in os.listdir(inbox):
+        if file.endswith(".md"):
+            post = frontmatter.load(os.path.join(inbox, file))
+            related = post.get("related_notes", [])
+
+            for link in related:
+                clean = link.replace("[[", "").replace("]]", "")
+                if clean not in existing:
+                    issues.append(clean)
+
+    return issues
+
+
+# ===== TEST CLASS =====
+
+class TestIEEEBrain(unittest.TestCase):
 
     def setUp(self):
-        # Create a temporary "Fake Vault" for every test
         self.test_dir = tempfile.mkdtemp()
+
         self.inbox = os.path.join(self.test_dir, "00_Inbox")
-        self.knowledge_base = os.path.join(self.test_dir, "30_Knowledge_Base")
+        self.kb = os.path.join(self.test_dir, "30_Knowledge_Base")
         self.projects = os.path.join(self.test_dir, "20_Projects")
-        
+
         os.makedirs(self.inbox)
-        os.makedirs(self.knowledge_base)
+        os.makedirs(self.kb)
         os.makedirs(self.projects)
 
     def tearDown(self):
-        # Delete the fake vault after test
         shutil.rmtree(self.test_dir)
 
-    def create_note(self, filename, metadata):
-        # Helper to make a fake note
-        path = os.path.join(self.inbox, filename)
+    def create_note(self, name, metadata, content=""):
+        path = os.path.join(self.inbox, name)
+        post = frontmatter.Post(content, **metadata)
+
         with open(path, "w") as f:
-            f.write(frontmatter.dumps(frontmatter.Post("", **metadata)))
+            f.write(frontmatter.dumps(post))
+
         return path
 
-    # --- TEST 1: The Gatekeeper (Validation) ---
-    def test_gatekeeper_rejects_missing_metadata(self):
-        # Create a BAD note (missing 'status')
-        self.create_note("bad_note.md", {"author": "Ahmed", "type": "concept"})
-        
-        # Simulate Validation Logic
-        required_keys = ["author", "type", "status"]
-        has_error = False
-        post = frontmatter.load(os.path.join(self.inbox, "bad_note.md"))
-        missing = [key for key in required_keys if key not in post.keys()]
-        
-        if missing:
-            has_error = True
-            
-        self.assertTrue(has_error, "Gatekeeper should have rejected the note!")
+    # ===== BASIC TESTS =====
 
-    def test_gatekeeper_accepts_good_metadata(self):
-        # Create a GOOD note
-        self.create_note("good_note.md", {"author": "Ahmed", "type": "concept", "status": "needs_review"})
-        
-        # Simulate Validation
-        required_keys = ["author", "type", "status"]
-        post = frontmatter.load(os.path.join(self.inbox, "good_note.md"))
-        missing = [key for key in required_keys if key not in post.keys()]
-        
-        self.assertFalse(missing, "Gatekeeper should have accepted the note!")
+    def test_missing_metadata(self):
+        self.create_note("bad.md", {"author": "Aya"})
+        self.assertTrue(validate_notes(self.inbox))
 
-    # --- TEST 2: The Librarian (Moving Files) ---
-    def test_librarian_moves_files(self):
-        # Create a note
-        filename = "move_me.md"
-        self.create_note(filename, {"author": "Ahmed", "type": "concept", "status": "needs_review"})
-        
-        # Simulate Organizer Logic
-        src = os.path.join(self.inbox, filename)
-        dest = os.path.join(self.knowledge_base, filename)
-        
-        # Logic: Move file
-        shutil.move(src, dest)
-        
-        # Checks
-        self.assertFalse(os.path.exists(src), "File should be gone from Inbox")
-        self.assertTrue(os.path.exists(dest), "File should be in Knowledge Base")
+    def test_valid_metadata(self):
+        self.create_note("good.md", {
+            "author": "Aya",
+            "type": "concept",
+            "status": "needs_review",
+            "domain": "AI"
+        })
+        self.assertFalse(validate_notes(self.inbox))
 
+    def test_detect_secret(self):
+        self.assertTrue(detect_secrets("sk-123"))
+        self.assertFalse(detect_secrets("hello"))
 
-            # --- TEST 3: Security Check ---
-    def test_gatekeeper_detects_secrets(self):
-        content = "My API key is sk-123456"
-        path = os.path.join(self.inbox, "secret_note.md")
-        
-        with open(path, "w") as f:
-            f.write(content)
+    def test_move_file(self):
+        self.create_note("file.md", {
+            "author": "Aya",
+            "type": "concept",
+            "status": "needs_review",
+            "domain": "AI"
+        })
 
-        with open(path, "r") as f:
-            text = f.read()
+        moved = organize_notes(self.inbox, self.kb, self.projects)
+        self.assertEqual(len(moved), 1)
 
-        has_secret = "sk-" in text
+    def test_link_check(self):
+        kb_note = os.path.join(self.kb, "Attention.md")
+        with open(kb_note, "w") as f:
+            f.write("test")
 
-        self.assertTrue(has_secret, "Should detect API keys!")
+        self.create_note("note.md", {
+            "author": "Aya",
+            "type": "concept",
+            "status": "needs_review",
+            "domain": "AI",
+            "related_notes": ["[[WrongLink]]"]
+        })
 
-    # --- TEST 4: Link Check ---
-    def test_link_presence(self):
-        content = "Transformers use Attention"
-        path = os.path.join(self.inbox, "link_note.md")
+        existing = scan_existing_notes(self.kb)
+        issues = check_links(self.inbox, existing)
 
-        with open(path, "w") as f:
-            f.write(content)
+        self.assertTrue(len(issues) > 0)
 
-        with open(path, "r") as f:
-            text = f.read()
+    # ===== NEW FEATURES =====
 
-        has_link = "[[Attention]]" in text
+    def test_auto_fix_metadata(self):
+        post = frontmatter.Post("", author="Aya", type="concept")
 
-        self.assertFalse(has_link, "Link should be missing and detected!")
+        fixed = auto_fix_metadata(post)
 
-    # --- TEST 5: Metadata Integrity ---
-    def test_librarian_keeps_metadata(self):
-        filename = "note.md"
-        metadata = {"author": "Aya", "type": "concept", "status": "needs_review"}
-        
-        self.create_note(filename, metadata)
+        self.assertIn("status", fixed)
+        self.assertIn("domain", fixed)
 
-        src = os.path.join(self.inbox, filename)
-        dest = os.path.join(self.knowledge_base, filename)
+    def test_auto_add_links(self):
+        content = "This is about Attention"
+        notes = ["Attention"]
 
-        shutil.move(src, dest)
+        new_content, links = auto_add_links(content, notes)
 
-        post = frontmatter.load(dest)
+        self.assertEqual(new_content, "This is about [[Attention]]")
+        self.assertIn("Attention", links)
 
-        self.assertEqual(post["author"], "Aya")
+    def test_detect_duplicates(self):
+        open(os.path.join(self.kb, "dup.md"), "w").close()
+        open(os.path.join(self.kb, "dup_copy.md"), "w").close()
+
+        dups = detect_duplicates()
+        self.assertIsInstance(dups, list)
+
+    def test_suggest_domain(self):
+        result = suggest_domain("This is about neural networks")
+        self.assertEqual(result, "AI")
+
+    def test_suggest_domain_robotics(self):
+        result = suggest_domain("This robot moves fast")
+        self.assertEqual(result, "Robotics")
+
+    def test_invalid_domain(self):
+        post = frontmatter.Post("", author="Aya", type="concept", domain="Wrong")
+
+        fixed = auto_fix_metadata(post)
+
+        self.assertIn("domain", fixed)
+
+    def test_full_flow(self):
+        self.create_note("note.md", {
+            "author": "Aya",
+            "type": "concept",
+            "status": "needs_review",
+            "domain": "General"
+        }, "This is about Attention")
+
+        existing = ["Attention"]
+        content = "This is about Attention"
+
+        new_content, links = auto_add_links(content, existing)
+
+        self.assertIn("[[Attention]]", new_content)
+        self.assertIn("Attention", links)
+
 
 if __name__ == "__main__":
     unittest.main()
