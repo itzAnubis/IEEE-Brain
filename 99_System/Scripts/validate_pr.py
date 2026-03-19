@@ -9,11 +9,17 @@ ALLOWED_DOMAINS = ["AI", "Robotics", "CS", "DS", "SS", "General"]
 
 
 def auto_fix_metadata(post):
+    changes = []
+
     if "status" not in post:
         post["status"] = "needs_review"
+        changes.append("status")
+
     if "domain" not in post:
         post["domain"] = "General"
-    return post
+        changes.append("domain")
+
+    return post, changes
 
 
 def suggest_domain(content):
@@ -34,42 +40,64 @@ def annotate_failure(filepath, reason):
         f.write(f"> [!FAILURE] {reason}\n\n" + content)
 
 
-# 
 if __name__ == "__main__":
-    print("👮 Gatekeeper running...")
+    print("👮 Gatekeeper running...\n")
 
     has_error = False
+    total_fixed = 0
 
     for root, dirs, files in os.walk(INBOX_DIR):
         for file in files:
             if file.endswith(".md"):
                 path = os.path.join(root, file)
-                post = frontmatter.load(path)
 
-                # ✅ Auto fix
-                post = auto_fix_metadata(post)
+                try:
+                    post = frontmatter.load(path)
+                except Exception as e:
+                    print(f"❌ YAML Error in {file}: {e}")
+                    has_error = True
+                    continue
 
-                # ✅ Auto domain
-                if post["domain"] == "General":
-                    post["domain"] = suggest_domain(post.content)
+                print(f"📄 Checking: {file}")
+
+                # ✅ Auto fix metadata
+                post, fixes = auto_fix_metadata(post)
+                if fixes:
+                    print(f"   🛠 Fixed missing: {fixes}")
+                    total_fixed += 1
+
+                # ✅ Suggest domain
+                original_domain = post.get("domain")
+                if original_domain == "General":
+                    new_domain = suggest_domain(post.content)
+                    if new_domain != "General":
+                        post["domain"] = new_domain
+                        print(f"   🧠 Domain updated: {original_domain} → {new_domain}")
 
                 # ❌ Missing keys
                 missing = [k for k in REQUIRED_KEYS if k not in post]
                 if missing:
+                    print(f"   ❌ Missing keys: {missing}")
                     annotate_failure(path, f"Missing {missing}")
                     has_error = True
                     continue
 
                 # ❌ Invalid domain
                 if post["domain"] not in ALLOWED_DOMAINS:
+                    print(f"   ❌ Invalid domain: {post['domain']}")
                     annotate_failure(path, "Invalid domain")
                     has_error = True
 
-                # Save
+                # Save file
                 with open(path, "w") as f:
                     f.write(frontmatter.dumps(post))
 
+    print("\n📊 Summary:")
+    print(f"   🛠 Files fixed: {total_fixed}")
+
     if has_error:
+        print("\n❌ Gatekeeper FAILED")
         sys.exit(1)
     else:
+        print("\n✅ Gatekeeper PASSED")
         sys.exit(0)
