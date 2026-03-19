@@ -35,7 +35,6 @@ def detect_duplicates():
     return duplicates
 
 
-
 if __name__ == "__main__":
     print("🔗 Linker running...")
 
@@ -44,7 +43,13 @@ if __name__ == "__main__":
     for file in os.listdir(INBOX):
         if file.endswith(".md"):
             path = os.path.join(INBOX, file)
-            post = frontmatter.load(path)
+
+            # ✅ هنا أهم تعديل
+            try:
+                post = frontmatter.load(path)
+            except Exception as e:
+                print(f"❌ Error in file {path}: {e}")
+                continue  # يكمل على باقي الملفات
 
             new_content = auto_add_links(post.content, existing)
             post.content = new_content

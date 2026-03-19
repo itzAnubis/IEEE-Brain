@@ -3,27 +3,38 @@ name: "👮‍♂️ IEEE Gatekeeper: Verify"
 on:
   pull_request:
     paths:
-      - "00_Inbox/**.md"  # Triggers when files in Inbox change
+      - "00_Inbox/**/*.md"
+      - "99_System/**/*.py"
+      - "tests/**/*.py"
 
 jobs:
   validate-submission:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: 📥 Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: 🐍 Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.12'
 
-      - name: Install Dependencies
-        run: pip install python-frontmatter
+      - name: 📦 Install Dependencies
+        run: |
+          pip install python-frontmatter pyyaml
 
-      # --- LEVEL 1: METADATA CHECK ---
-      - name: 1️⃣ Validate Metadata (ID Check)
-        run: python3 99_System/Scripts/validate_pr.py
+      # ✅ 1) RUN TESTS
+      - name: 🧪 Run Tests
+        run: |
+          python -m unittest discover tests
 
-      # --- LEVEL 2: SMART LINK CHECK ---
-      - name: 2️⃣ Smart Link Audit (Content Check)
-        run: python3 99_System/Scripts/smart_linker.py
+      # ✅ 2) RUN SMART LINKER
+      - name: 🔗 Smart Linker
+        run: |
+          python 99_System/Scripts/smart_linker.py
+
+      # ✅ 3) RUN GATEKEEPER
+      - name: 👮 Gatekeeper Validation
+        run: |
+          python 99_System/Scripts/validate_pr.py

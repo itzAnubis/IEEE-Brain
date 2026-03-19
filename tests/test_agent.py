@@ -5,7 +5,7 @@ import shutil
 import frontmatter
 import sys
 
-
+# عشان نقدر نعمل import من غير ما نغير اسم 99_System
 sys.path.append(os.path.abspath("99_System/Scripts"))
 
 from smart_linker import auto_add_links, detect_duplicates
@@ -166,20 +166,45 @@ class TestIEEEBrain(unittest.TestCase):
 
         new_content = auto_add_links(content, notes)
 
-        self.assertIn("[[Attention]]", new_content)
+        # 🔥 test أقوى
+        self.assertEqual(new_content, "This is about [[Attention]]")
 
     def test_detect_duplicates(self):
-        # create duplicate-like files
         open(os.path.join(self.kb, "dup.md"), "w").close()
-        open(os.path.join(self.kb, "dup.md"), "w").close()
+        open(os.path.join(self.kb, "dup_copy.md"), "w").close()
 
         dups = detect_duplicates()
-
         self.assertIsInstance(dups, list)
 
     def test_suggest_domain(self):
         result = suggest_domain("This is about neural networks")
         self.assertEqual(result, "AI")
+
+    def test_suggest_domain_robotics(self):
+        result = suggest_domain("This robot moves fast")
+        self.assertEqual(result, "Robotics")
+
+    def test_invalid_domain(self):
+        post = frontmatter.Post("", author="Aya", type="concept", domain="Wrong")
+
+        fixed = auto_fix_metadata(post)
+
+        self.assertIn("domain", fixed)
+
+    def test_full_flow(self):
+        self.create_note("note.md", {
+            "author": "Aya",
+            "type": "concept",
+            "status": "needs_review",
+            "domain": "General"
+        }, "This is about Attention")
+
+        existing = ["Attention"]
+        content = "This is about Attention"
+
+        new_content = auto_add_links(content, existing)
+
+        self.assertIn("[[Attention]]", new_content)
 
 
 if __name__ == "__main__":

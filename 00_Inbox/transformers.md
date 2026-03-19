@@ -1,14 +1,12 @@
 ---
 author: Aya
-type: concept
-status: needs_review
-domain: AI
 concepts:
-  - Transformers
-  - Attention
+- Transformers
+domain: AI
 related_notes:
-  - "[[Deep Learning]]"
+- '[[WrongLink]]'
+status: needs_review
+type: concept
 ---
-Transformers are a deep learning architecture widely used in NLP.
 
-They rely heavily on the [[Attention]] mechanism.
+Transformers test file
