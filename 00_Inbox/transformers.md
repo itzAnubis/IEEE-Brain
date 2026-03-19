@@ -7,7 +7,7 @@ concepts:
   - Transformers
   - Attention
 related_notes:
-  - "[[DeepLearningWrong]]
+  - "[[Deep Learning]]"
 ---
 Transformers are a deep learning architecture widely used in NLP.
 

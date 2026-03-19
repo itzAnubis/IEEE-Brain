@@ -35,23 +35,23 @@ def detect_duplicates():
     return duplicates
 
 
-print("🔗 Linker running...")
 
-existing = scan_existing_notes()
+if __name__ == "__main__":
+    print("🔗 Linker running...")
 
-for file in os.listdir(INBOX):
-    if file.endswith(".md"):
-        path = os.path.join(INBOX, file)
-        post = frontmatter.load(path)
+    existing = scan_existing_notes()
 
-        # ✅ Auto link generation
-        new_content = auto_add_links(post.content, existing)
-        post.content = new_content
+    for file in os.listdir(INBOX):
+        if file.endswith(".md"):
+            path = os.path.join(INBOX, file)
+            post = frontmatter.load(path)
 
-        with open(path, "w") as f:
-            f.write(frontmatter.dumps(post))
+            new_content = auto_add_links(post.content, existing)
+            post.content = new_content
 
-# ✅ Duplicate check
-dups = detect_duplicates()
-if dups:
-    print("⚠️ Duplicate notes found:", dups)
+            with open(path, "w") as f:
+                f.write(frontmatter.dumps(post))
+
+    dups = detect_duplicates()
+    if dups:
+        print("⚠️ Duplicate notes found:", dups)

@@ -34,39 +34,42 @@ def annotate_failure(filepath, reason):
         f.write(f"> [!FAILURE] {reason}\n\n" + content)
 
 
-print("👮 Gatekeeper running...")
-has_error = False
+# 
+if __name__ == "__main__":
+    print("👮 Gatekeeper running...")
 
-for root, dirs, files in os.walk(INBOX_DIR):
-    for file in files:
-        if file.endswith(".md"):
-            path = os.path.join(root, file)
-            post = frontmatter.load(path)
+    has_error = False
 
-            # ✅ Auto fix
-            post = auto_fix_metadata(post)
+    for root, dirs, files in os.walk(INBOX_DIR):
+        for file in files:
+            if file.endswith(".md"):
+                path = os.path.join(root, file)
+                post = frontmatter.load(path)
 
-            # ✅ Auto domain suggestion
-            if post["domain"] == "General":
-                post["domain"] = suggest_domain(post.content)
+                # ✅ Auto fix
+                post = auto_fix_metadata(post)
 
-            # ❌ Missing keys
-            missing = [k for k in REQUIRED_KEYS if k not in post]
-            if missing:
-                annotate_failure(path, f"Missing {missing}")
-                has_error = True
-                continue
+                # ✅ Auto domain
+                if post["domain"] == "General":
+                    post["domain"] = suggest_domain(post.content)
 
-            # ❌ Invalid domain
-            if post["domain"] not in ALLOWED_DOMAINS:
-                annotate_failure(path, "Invalid domain")
-                has_error = True
+                # ❌ Missing keys
+                missing = [k for k in REQUIRED_KEYS if k not in post]
+                if missing:
+                    annotate_failure(path, f"Missing {missing}")
+                    has_error = True
+                    continue
 
-            # Save changes
-            with open(path, "w") as f:
-                f.write(frontmatter.dumps(post))
+                # ❌ Invalid domain
+                if post["domain"] not in ALLOWED_DOMAINS:
+                    annotate_failure(path, "Invalid domain")
+                    has_error = True
 
-if has_error:
-    sys.exit(1)
-else:
-    sys.exit(0)
+                # Save
+                with open(path, "w") as f:
+                    f.write(frontmatter.dumps(post))
+
+    if has_error:
+        sys.exit(1)
+    else:
+        sys.exit(0)

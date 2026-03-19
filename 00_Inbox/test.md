@@ -1,11 +1,12 @@
 ---
 author: Aya
-type: concept
-status: needs_review
-domain:
 concepts:
-  - Transformers
+- Transformers
+domain: AI
 related_notes:
-  - "[[Attention]]"
+- '[[Attention]]'
+status: needs_review
+type: concept
 ---
+
 Transformers use the [[Attention]] mechanism. (test update)

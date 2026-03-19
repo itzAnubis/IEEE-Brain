@@ -3,6 +3,14 @@ import os
 import tempfile
 import shutil
 import frontmatter
+import sys
+
+
+sys.path.append(os.path.abspath("99_System/Scripts"))
+
+from smart_linker import auto_add_links, detect_duplicates
+from validate_pr import auto_fix_metadata, suggest_domain
+
 
 # ===== FUNCTIONS =====
 
@@ -14,7 +22,7 @@ def validate_notes(inbox):
             post = frontmatter.load(os.path.join(inbox, file))
             for key in required:
                 if key not in post:
-                    return True  # error found
+                    return True
     return False
 
 
@@ -67,15 +75,6 @@ def check_links(inbox, existing):
     return issues
 
 
-# ✅ NEW FEATURE: Auto Fix Metadata
-def auto_fix_metadata(post):
-    if "status" not in post:
-        post["status"] = "needs_review"
-    if "domain" not in post:
-        post["domain"] = "General"
-    return post
-
-
 # ===== TEST CLASS =====
 
 class TestIEEEBrain(unittest.TestCase):
@@ -103,9 +102,8 @@ class TestIEEEBrain(unittest.TestCase):
 
         return path
 
-    # ===== TESTS =====
+    # ===== BASIC TESTS =====
 
-    # ✅ Gatekeeper
     def test_missing_metadata(self):
         self.create_note("bad.md", {"author": "Aya"})
         self.assertTrue(validate_notes(self.inbox))
@@ -119,12 +117,10 @@ class TestIEEEBrain(unittest.TestCase):
         })
         self.assertFalse(validate_notes(self.inbox))
 
-    # ✅ Security
     def test_detect_secret(self):
         self.assertTrue(detect_secrets("sk-123"))
         self.assertFalse(detect_secrets("hello"))
 
-    # ✅ Librarian
     def test_move_file(self):
         self.create_note("file.md", {
             "author": "Aya",
@@ -134,12 +130,9 @@ class TestIEEEBrain(unittest.TestCase):
         })
 
         moved = organize_notes(self.inbox, self.kb, self.projects)
-
         self.assertEqual(len(moved), 1)
 
-    # ✅ Linker
     def test_link_check(self):
-        # create KB note
         kb_note = os.path.join(self.kb, "Attention.md")
         with open(kb_note, "w") as f:
             f.write("test")
@@ -157,7 +150,8 @@ class TestIEEEBrain(unittest.TestCase):
 
         self.assertTrue(len(issues) > 0)
 
-    # ✅ NEW FEATURE: Auto Fix Metadata
+    # ===== NEW FEATURES =====
+
     def test_auto_fix_metadata(self):
         post = frontmatter.Post("", author="Aya", type="concept")
 
@@ -165,6 +159,27 @@ class TestIEEEBrain(unittest.TestCase):
 
         self.assertIn("status", fixed)
         self.assertIn("domain", fixed)
+
+    def test_auto_add_links(self):
+        content = "This is about Attention"
+        notes = ["Attention"]
+
+        new_content = auto_add_links(content, notes)
+
+        self.assertIn("[[Attention]]", new_content)
+
+    def test_detect_duplicates(self):
+        # create duplicate-like files
+        open(os.path.join(self.kb, "dup.md"), "w").close()
+        open(os.path.join(self.kb, "dup.md"), "w").close()
+
+        dups = detect_duplicates()
+
+        self.assertIsInstance(dups, list)
+
+    def test_suggest_domain(self):
+        result = suggest_domain("This is about neural networks")
+        self.assertEqual(result, "AI")
 
 
 if __name__ == "__main__":
